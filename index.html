@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            scale: 1;
+            height: 100%;
+            width: 98%;
+        }
+        
+        td {
+            border: solid 2px black;
+            height: 170px;
+            width: 170px;
+            text-align: center;
+            vertical-align: middle;
+            font-family: "Comic Sans MS", cursive, sans-serif;
+            font-size: 600%;
+            cursor: pointer;
+        }
+        
+        table {
+            scale: 0.8;
+            border-collapse: collapse;
+            position: absolute;
+            left: 50%;
+            margin-left: -260px;
+            top: 50px;
+            border-radius: 100px;
+        }
+        /*table tr:first-child td {
+            border-top: 0;
+        }
+        
+        table tr:last-child td {
+            border-bottom: 0;
+        }
+        
+        table tr td:first-child {
+            border-left: 0;
+        }
+        
+        table tr td:last-child {
+            border-right: 0;
+        }*/
+        
+        .endgame {
+            display: none;
+            width: 200px;
+            top: 200px;
+            background-color: rgba(205, 133, 63, 0.8);
+            position: absolute;
+            left: 50%;
+            margin-left: -100px;
+            padding-top: 30px;
+            padding-bottom: 30px;
+            text-align: center;
+            border-radius: 5px;
+            color: white;
+            font-size: 2em;
+            font-family: monospace;
+            scale: 2;
+        }
+        
+        #reset {
+            position: absolute;
+            bottom: -580px;
+            left: 50%;
+            margin-left: -25px;
+            align-items: center;
+        }
+        
+        #intro {
+            width: 20%;
+            height: 30%;
+            position: absolute;
+            top: 296px;
+            left: 40.8%;
+        }
+    </style>
+    <title>Tic Tac Toe</title>
+</head>
+
+<body>
+    <table style="visibility: hidden;">
+        <tr>
+            <td class="cell" id="0"></td>
+            <td class="cell" id="1"></td>
+            <td class="cell" id="2"></td>
+        </tr>
+        <tr>
+            <td class="cell" id="3"></td>
+            <td class="cell" id="4"></td>
+            <td class="cell" id="5"></td>
+        </tr>
+        <tr>
+            <td class="cell" id="6"></td>
+            <td class="cell" id="7"></td>
+            <td class="cell" id="8"></td>
+        </tr>
+    </table>
+    <div class="endgame" id="endgame">
+        <div id="text"></div>
+        <div id="score" style="font-size: 50%;">
+            Wins:
+            <strong id="wins">0</strong>
+            <br>Losses:
+            <strong id="losses"></strong>
+            <br> Ties:
+            <strong id="ties"></strong>
+        </div>
+    </div>
+    <p id="RAM"></p>
+    <button onclick="document.getElementById('intro').style.visibility = 'visible';  document.querySelector('table').style.visibility='hidden'; document.querySelector('#endgame').style.display='none'; gofirst = null; reset();" id="reset">Reset</button>
+    <p id="debug" style="display: none;"></p>
+    <div id="intro">
+        <button onclick="gofirst = true; game(); document.getElementById('intro').style.visibility = 'hidden';  document.querySelector('table').style.visibility='visible'" style="scale: 7; position: relative; background-color:blue;">X</button>
+        <button onclick="gofirst = false; game(); document.getElementById('intro').style.visibility = 'hidden';  document.querySelector('table').style.visibility='visible'" style="scale: 7; position: relative; left: 180px; background-color:red;" id="O">O</button>
+    </div>
+    <script>
+        //X or O
+        var gofirst = false
+        var start;
+        //Default values
+        var player = "X";
+        var AI = "O";
+        var ties = 0;
+        var losses = 0;
+
+        const winCombos = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [6, 4, 2]
+        ];
+        const cells = document.querySelectorAll(".cell");
+
+        function game() {
+
+            document.querySelector(".endgame").style.display = "none";
+
+            start = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+            for (let i = 0; i < cells.length; i++) {
+                cells[i].innerText = '';
+                cells[i].style.removeProperty('background-color');
+                cells[i].addEventListener('click', turnClick, false)
+            }
+            if (!gofirst) {
+                //alert("You are playing as O")
+                player = 'O';
+                AI = 'X';
+                turn(0, AI)
+            } else {
+                player = 'X'
+                AI = 'O'
+                    //alert("You are playing as X")
+            }
+        }
+
+        function turnClick(square) {
+            if (typeof start[square.target.id] == "number") {
+                turn(square.target.id, player);
+                checkTie()
+                setTimeout(function() {
+                        if (!checkTie()) {
+                            turn(bestSpot(), AI)
+                        }
+
+
+                    }, 100)
+                    //declareWinner("Tie Game!")
+            }
+        }
+
+        function turn(squareId, player1) {
+            //alert(squareId)
+            start[squareId] = player1;
+            document.getElementById(squareId).innerHTML = player1;
+
+            let gameWon = checkWin(start, player1);
+            if (gameWon) gameOver(gameWon)
+        }
+
+        function checkWin(board, player) {
+            let plays = board.reduce((a, e, i) =>
+                (e === player) ? a.concat(i) : a, [])
+            let gameWon = null
+            for (let [index, win] of winCombos.entries()) {
+                if (win.every(elem => plays.indexOf(elem) > -1)) {
+                    gameWon = {
+                            index: index,
+                            player: player
+                        }
+                        //losses += 1
+                    break;
+                }
+            }
+            return gameWon
+        }
+        document.getElementById("O").onclick = function() {
+            gofirst = false;
+            document.getElementById('intro').style.visibility = 'hidden';
+            document.querySelector('table').style.visibility = 'visible'
+            setTimeout(game, 500)
+        }
+
+        function gameOver(gameWon) {
+            for (let index of winCombos[gameWon.index]) {
+                document.getElementById(index).style.backgroundColor =
+                    gameWon.player == player ? "blue" : "red"
+            }
+            for (var i = 0; i < cells.length; i++) {
+                cells[i].removeEventListener('click', turnClick, false)
+            }
+            losses += 1
+            document.getElementById("losses").innerHTML = 200
+
+            declareWinner(gameWon.player == player ? "You're a Cheater!" : "You Lose!")
+        }
+
+        function bestSpot() {
+            fc = 1 + fc;
+            document.getElementById("RAM").innerText = "Hello" + fc;
+            return (minimax(start, AI).index);
+        }
+
+        function declareWinner(winner) {
+            document.querySelector("#endgame").style.display = "block"
+                //document.querySelector(".endgame").style.visibility = "visible"
+            if (winner == "Tie Game!") {
+                if (AI == "X") {
+                    ties += 1 / 2
+                } else {
+                    ties += 1
+                }
+                start = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+
+            }
+            document.querySelector("#text").innerHTML = winner;
+        }
+
+        function emptySquares() {
+            return start.filter(s => typeof s == "number");
+        }
+
+        function checkTie() {
+            if (emptySquares().length == 0) {
+                for (var i = 0; i < cells.length; i++) {
+                    cells[i].style.backgroundColor = "green"
+                    cells[i].removeEventListener("click", turnClick, false);
+                }
+                declareWinner("Tie Game!")
+
+                return true;
+            }
+            return false
+        }
+        var fc = 0
+        var bestMove
+        var bestScore
+
+        function minimax(board, play) {
+            fc += 1
+            var availSpots = emptySquares();
+            if (checkWin(board, player)) {
+                return {
+                    score: -10
+                };
+            } else if (checkWin(board, AI)) {
+                return {
+                    score: 10
+                };
+            } else if (availSpots.length === 0) {
+                return {
+                    score: 0
+                }
+            }
+            //Array with all possible moves
+            var moves = []
+            for (var i = 0; i < availSpots.length; i++) {
+                //create move
+                var move = {};
+                move.index = board[availSpots[i]];
+                board[availSpots[i]] = play
+                if (play == AI) {
+                    var result = minimax(board, player);
+                    move.score = result.score // + move.score
+                        //alert(move.score)
+                } else {
+                    var result = minimax(board, AI);
+                    move.score = result.score // + move.score;
+                }
+                board[availSpots[i]] = move.index
+
+                moves.push(move);
+            }
+
+            if (play === AI) {
+                bestScore = -10000;
+                for (var i = 0; i < moves.length; i++) {
+
+                    if (moves[i].score > bestScore && moves[i].score != -10) {
+                        bestScore = moves[i].score;
+                        bestMove = i
+                            //alert(bestMove)
+                    }
+
+
+                }
+            } else {
+                bestScore = 10000;
+                for (var i = 0; i < moves.length; i++) {
+                    const x = moves[i];
+                    if (x.score < bestScore && moves[i].score != 10) {
+                        bestScore = x.score;
+                        bestMove = i;
+                        //alert(bestMove)
+                    }
+                }
+            }
+
+            return moves[bestMove]
+        }
+        //Checks for tie every second
+        setInterval(() => {
+            document.getElementById("debug").innerHTML = `
+<br>${bestMove} <br> ${bestScore} <br> ${fc}
+`
+            if (checkTie()) {
+                declareWinner("Tie Game!")
+                    //ties += 1
+
+
+            }
+
+            document.getElementById("ties").innerText = ties
+            document.getElementById("losses").innerText = losses
+        }, 1);
+
+        function reset() {
+            start = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+            for (let i = 0; i < cells.length; i++) {
+                cells[i].innerText = '';
+                cells[i].style.removeProperty('background-color');
+                cells[i].addEventListener('click', turnClick, false)
+            }
+        }
+    </script>
+</body>
+
+</html>
